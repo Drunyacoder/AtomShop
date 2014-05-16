@@ -17,6 +17,7 @@ $menuInfo = array(
 
 
 
+
 $settingsInfo = array(
 	'title' => array(
 		'type' => 'text',
