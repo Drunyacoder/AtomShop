@@ -10,6 +10,7 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_attributes` (
   `label` varchar(100) NOT NULL DEFAULT '',
   `type` varchar(20) NOT NULL DEFAULT 'text',
   `is_filterable` enum('0','1') NOT NULL DEFAULT '1',
+  `params` tinytext,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8";
 $FpsInstallQueries[] = "INSERT INTO `{$db_prefix}shop_attributes` (`id`, `group_id`, `title`, `label`, `type`, `is_filterable`) VALUES
@@ -116,7 +117,7 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_products` (
   `commented` enum('0','1') NOT NULL DEFAULT '1',
   `view_on_home` enum('0','1') NOT NULL DEFAULT '1',
   `hide_not_exists` enum('0','1') NOT NULL DEFAULT '0',
-  `articul` varchar(50) NOT NULL DEFAULT '',
+  `article` varchar(50) NOT NULL DEFAULT '',
   `image` varchar(255) NOT NULL DEFAULT '',
   `price` int(11) NOT NULL,
   `discount` int(11) NOT NULL DEFAULT '0',

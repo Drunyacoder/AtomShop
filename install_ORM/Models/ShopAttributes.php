@@ -27,6 +27,8 @@
 class ShopAttributesModel extends FpsModel
 {
 	public $Table = 'shop_attributes';
+	
+	public $allowedTypes = array('text', 'textarea', 'checkbox', 'select', 'image');
 
     protected $RelatedEntities = array(
         'content' => array(
