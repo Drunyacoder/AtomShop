@@ -10,6 +10,7 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_attributes` (
   `label` varchar(100) NOT NULL DEFAULT '',
   `type` varchar(20) NOT NULL DEFAULT 'text',
   `is_filterable` enum('0','1') NOT NULL DEFAULT '1',
+  `params` tinytext,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8";
 $FpsInstallQueries[] = "INSERT INTO `{$db_prefix}shop_attributes` (`id`, `group_id`, `title`, `label`, `type`, `is_filterable`) VALUES
@@ -78,7 +79,7 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_orders` (
   `user_id` int(11) NOT NULL DEFAULT '0',
   `date` datetime NOT NULL,
   `status` enum('process','delivery','complete') NOT NULL DEFAULT 'process',
-  `total` int(11) NOT NULL DEFAULT '0',
+  `total` decimal(11,2) NOT NULL DEFAULT '0',
   `comment` text NOT NULL,
   `delivery_address` text NOT NULL,
   `delivery_type_id` int(11) NOT NULL DEFAULT '0',
@@ -116,10 +117,11 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_products` (
   `commented` enum('0','1') NOT NULL DEFAULT '1',
   `view_on_home` enum('0','1') NOT NULL DEFAULT '1',
   `hide_not_exists` enum('0','1') NOT NULL DEFAULT '0',
-  `articul` varchar(50) NOT NULL DEFAULT '',
+  `article` varchar(50) NOT NULL DEFAULT '',
   `image` varchar(255) NOT NULL DEFAULT '',
-  `price` int(11) NOT NULL,
+  `price` decimal(11,2) NOT NULL DEFAULT '0',
   `discount` int(11) NOT NULL DEFAULT '0',
+  `quantity` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8";
 $FpsInstallQueries[] = "INSERT INTO `{$db_prefix}shop_products` (`id`, `attributes_group_id`, `title`, `description`, `category_id`, `vendor_id`, `user_id`, `date`, `price`) VALUES
