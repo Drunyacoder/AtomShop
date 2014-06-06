@@ -119,7 +119,7 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_products` (
   `hide_not_exists` enum('0','1') NOT NULL DEFAULT '0',
   `article` varchar(50) NOT NULL DEFAULT '',
   `image` varchar(255) NOT NULL DEFAULT '',
-  `price` decimal(11,2) NOT NULL DEFAULT '0',
+  `price` int(11) NOT NULL,
   `discount` int(11) NOT NULL DEFAULT '0',
   `quantity` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
