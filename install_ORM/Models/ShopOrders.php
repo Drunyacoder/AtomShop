@@ -30,9 +30,9 @@ class ShopOrdersModel extends FpsModel
 
     protected $RelatedEntities = array(
         'products' => array(
-            'model' => 'shopOrdersProducts',
-            'type' => 'has_many',
-            'foreignKey' => 'order_id',
+            'model' => array('shopOrdersProducts', 'shopProducts'),
+            'type' => 'many_to_many',
+            'foreignKey' => array('order_id', 'product_id'),
       	),
     );
 	

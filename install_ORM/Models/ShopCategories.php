@@ -28,7 +28,13 @@ class ShopCategoriesModel extends FpsModel
 {
 	public $Table = 'shop_categories';
 
-    protected $RelatedEntities = array();
+    protected $RelatedEntities = array(
+        'products' => array(
+            'model' => 'shopProducts',
+            'type' => 'has_many',
+            'foreignKey' => 'category_id',
+        ),
+    );
 	
 
 }

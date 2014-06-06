@@ -34,6 +34,11 @@ class ShopProductsModel extends FpsModel
             'type' => 'has_one',
             'internalKey' => 'attributes_group_id',
       	),
+        'attributes' => array(
+            'model' => array('shopAttributesGroups', 'shopAttributes'),
+            'type' => 'has_many_through',
+            'foreignKey' => array('attributes_group_id', 'group_id'),
+        ),
         'vendor' => array(
             'model' => 'shopVendors',
             'type' => 'has_one',
@@ -56,5 +61,11 @@ class ShopProductsModel extends FpsModel
             'additionCond' => array("module = 'shop'"),
         ),
     );
+
+    protected $orderParams = array(
+        'allowed' => array('title', 'category.title', 'date', 'author.name', 'vendor.title', 'orders_cnt', 'comments_cnt', 'price', 'discount'),
+        'default' => 'date',
+    );
+
 
 }

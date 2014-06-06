@@ -49,8 +49,9 @@ class ShopProductsEntity extends FpsEntity
 	protected $discount;
 
 	
-	public function save()
+	public function save($full = false)
 	{
+        if ($full === true) $this->__saveAttributes();
 		$params = array(
 			'stock_id' => intval($this->stock_id),
 			'stock_description' => (string)$this->stock_description,
@@ -69,21 +70,26 @@ class ShopProductsEntity extends FpsEntity
             'hide_not_exists' => (!empty($this->hide_not_exists)) ? '1' : '0',
             'article' => (string)$this->article,
             'image' => (string)$this->image,
-			'price' => intval($this->price),
+			'price' => floatval($this->price),
 			'discount' => intval($this->discount),
 		);
 		if ($this->id) $params['id'] = $this->id;
 		$Register = Register::getInstance();
 		return $Register['DB']->save('shop_products', $params);
 	}
-	
-	
+
 	
 	public function delete()
 	{ 
 		$Register = Register::getInstance();
 		$Register['DB']->delete('shop_products', array('id' => $this->id));
 	}
+
+
+    public function setPrice($price)
+    {
+        $this->price = floatval($price);
+    }
 
 
     /**
@@ -100,8 +106,8 @@ class ShopProductsEntity extends FpsEntity
             $name = strtolower($name);
             if (isset($this->$name)) $this->$name = $params[0];
             else {
-                if (!empty($this->attributes_group) && $this->attributes_group->getAttributes()) {
-                    foreach ($this->getAttributes_group()->getAttributes() as $attr) {
+                if (!empty($this->attributes) && $this->getAttributes()) {
+                    foreach ($this->getAttributes() as $attr) {
                         if ($name === strtolower($attr->getTitle())) {
                             $attr->getContent()->setContent($params[0]);
                             $setted = true;
@@ -117,9 +123,10 @@ class ShopProductsEntity extends FpsEntity
             $name = strtolower($name);
             if (isset($this->$name)) return $this->$name;
             else {
-                if (!empty($this->attributes_group) && $this->attributes_group->getAttributes()) {
-                    foreach ($this->getAttributes_group()->getAttributes() as $attr) {
-                        if ($name === strtolower($attr->getTitle())) return $attr->getContent()->getContent();
+                if (!empty($this->attributes) && $this->getAttributes()) {
+                    foreach ($this->getAttributes() as $attr) {
+                        if ($name === strtolower($attr->getTitle()) && $attr->getContent())
+                            return $attr->getContent()->getContent();
                     }
                 }
                 return null;
@@ -128,4 +135,14 @@ class ShopProductsEntity extends FpsEntity
         return;
     }
 
+
+    private function __saveAttributes()
+    {
+        if (empty($this->attributes)) return;
+        foreach ($this->attributes as $attr) {
+            if (!$attr->getContent()->getId() || $attr->getContent()->getChanged()) {
+                $attr->save(true);
+            }
+        }
+    }
 }
