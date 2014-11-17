@@ -95,7 +95,9 @@ $FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_orders_products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
+  `quantity` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  INDEX (`order_id`, `product_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8";
 
 
@@ -146,3 +148,14 @@ $FpsInstallQueries[] = "INSERT INTO `{$db_prefix}shop_vendors` (`id`, `title`) V
 (2, 'Microsoft'),
 (3, 'Imperia')";
 
+$FpsInstallQueries[] = "DROP TABLE IF EXISTS `{$db_prefix}shop_attaches`";
+$FpsInstallQueries[] = "CREATE TABLE `{$db_prefix}shop_attaches` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `entity_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `filename` varchar(100) NOT NULL,
+  `size` bigint(20) NOT NULL,
+  `date` datetime NOT NULL,
+  `is_main` enum('0','1') NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8";

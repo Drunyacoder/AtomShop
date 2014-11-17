@@ -58,7 +58,7 @@ class ShopAttributesEntity extends FpsEntity
         if (!isset($this->content)) {
             $contentEntity = new ShopAttributesContentEntity(array(
                 'attribute_id' => $this->getId(),
-                'product_id' => $this->getId(),
+                'product_id' => '',
                 'content' => '',
             ));
             $this->content = $contentEntity;
@@ -79,7 +79,7 @@ class ShopAttributesEntity extends FpsEntity
 
     public function getInputField()
     {
-        $attr_content = (is_object($this->content))
+        $attr_content = (!empty($this->content) && is_object($this->content))
             ? $this->content->getContent()
             : '';
         switch ($this->type) {

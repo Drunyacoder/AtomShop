@@ -32,6 +32,7 @@ class ShopProductsEntity extends FpsEntity
 	protected $stock_description;
 	protected $attributes_group_id;
 	protected $title;
+	protected $clean_url_title;
 	protected $description;
 	protected $category_id;
 	protected $vendor_id;
@@ -52,17 +53,17 @@ class ShopProductsEntity extends FpsEntity
 	
 	public function save($full = false)
 	{
-        if ($full === true) $this->__saveAttributes();
 		$params = array(
 			'stock_id' => intval($this->stock_id),
 			'stock_description' => (string)$this->stock_description,
 			'attributes_group_id' => intval($this->attributes_group_id),
 			'title' => (string)$this->title,
+			'clean_url_title' => (string)$this->clean_url_title,
 			'description' => (string)$this->description,
 			'category_id' => intval($this->category_id),
 			'vendor_id' => intval($this->vendor_id),
 			'user_id' => intval($this->user_id),
-			'date' => $this->date,
+			'date' => (empty($this->date)) ? new Expr('NOW()') : $this->date,
             'orders_cnt' => intval($this->orders_cnt),
             'comments_cnt' => intval($this->comments_cnt),
             'available' => (!empty($this->available)) ? '1' : '0',
@@ -76,8 +77,11 @@ class ShopProductsEntity extends FpsEntity
 			'quantity' => intval($this->quantity),
 		);
 		if ($this->id) $params['id'] = $this->id;
-		$Register = Register::getInstance();
-		return $Register['DB']->save('shop_products', $params);
+
+		parent::save('shop_products', $params);
+		
+		if ($full === true) $this->__saveAttributes();
+		return $this->id;
 	}
 
 	
@@ -92,6 +96,72 @@ class ShopProductsEntity extends FpsEntity
     {
         $this->price = floatval($price);
     }
+
+
+    /**
+     * Returns the product price without the active discounts.
+     * So the getPrice() & getFinal_price() returns different results if a product has discount(s).
+     *
+     * @return mixed
+     */
+    public function getFinal_price()
+	{
+		$discount = $this->getTotalDiscount();
+		$price = (!empty($discount))
+			? $this->price - ($this->price * ($discount / 100))
+			: $this->price;
+		return $price;
+	}
+	
+	
+	/**
+	 * Algorithms:
+	 * 1 - Priority: product > vendor > category
+	 * 2 - Priority: product > category > vendor
+	 * 3 - Amount: vendor + category + product
+	 * 4 - Max: vendor | category | product
+	 * 5 - Min: vendor | category | product
+	 */
+	public function getTotalDiscount()
+	{
+		$discount = intval($this->discount);
+		$vendor_discount = (!empty($this->vendor) && is_object($this->vendor))
+			? $this->vendor->getDiscount() : 0;
+		$category_discount = (!empty($this->category) && is_object($this->category))
+			? $this->category->getDiscount() : 0;
+			
+		$discounts_array = array($discount);
+		if ($vendor_discount) $discounts_array[] = $discounts_array;
+		if ($category_discount) $discounts_array[] = $category_discount;
+		
+		$algorithm = Config::read('shop.discount_algorithm');
+		switch ($algorithm) {
+			case 1:
+				if (!$discount && !empty($vendor_discount))
+					$discount = $vendor_discount;
+				if (!$discount && !empty($category_discount))
+					$discount = $category_discount;
+				break;
+			case 2:
+				if (!$discount && !empty($category_discount))
+					$discount = $category_discount;
+				if (!$discount && !empty($vendor_discount))
+					$discount = $vendor_discount;
+				break;
+			case 3:
+				$discount += $vendor_discount + $category_discount;
+				break;
+			default:
+			case 4:
+				$discount = max($discounts_array);
+				break;
+			case 5:
+				$discount = min($discounts_array);
+				break;
+		}
+		
+		return $discount;
+	}
 
 
     /**
@@ -138,12 +208,17 @@ class ShopProductsEntity extends FpsEntity
     }
 
 
+    /**
+     * Saves the all product attributes & their content
+     */
     private function __saveAttributes()
     {
         if (empty($this->attributes)) return;
         foreach ($this->attributes as $attr) {
             if (!$attr->getContent()->getId() || $attr->getContent()->getChanged()) {
-                $attr->save(true);
+				if (!$attr->getContent()->getProduct_id()) 
+					$attr->getContent()->setProduct_id($this->id);
+				$attr->save(true);
             }
         }
     }

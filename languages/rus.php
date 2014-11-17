@@ -65,6 +65,14 @@ return array(
         'Deivery types by days' => 'Типы доставки по дням',
         'Product orders' 	=> 'Заказы товара',
         'Orders for "%s"' 	=> 'Заказы товара - "%ы"',
+        'Basket is empty' 	=> 'Корзина пуста',
+        'Basket' 			=> 'Корзина',
+        'Products in the basket' => 'Товаров в корзине',
+        'color' 			=> 'Цвет',
+        'size' 				=> 'Размер',
+        'Last products' 	=> 'Товар заканчивается',
+        'Buy' 				=> 'Купить',
+        'Not available' 	=> 'Нет в наличии',
     ),
 );
 

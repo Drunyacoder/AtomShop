@@ -1,4 +1,26 @@
 <?php
+/*---------------------------------------------\
+|											   |
+| @Author:       Andrey Brykin (Drunya)        |
+| @Email:        drunyacoder@gmail.com         |
+| @Site:         http://atomx.net              |
+| @Version:      1.0.0                         |
+| @Project:      CMS                           |
+| @Package       AtomX CMS                     |
+| @Subpackege    Shop Module                   |
+| @Copyright     ©Andrey Brykin                |
+| @Last mod      2014/10/13                    |
+|----------------------------------------------|
+|											   |
+| any partial or not partial extension         |
+| CMS Fapos,without the consent of the         |
+| author, is illegal                           |
+|----------------------------------------------|
+| Любое распространение                        |
+| CMS Fapos или ее частей,                     |
+| без согласия автора, является не законным    |
+\---------------------------------------------*/
+
 
 class ShopSettingsController
 {
@@ -41,10 +63,10 @@ class ShopSettingsController
         $url = $this->currentUrl;
         if (!empty($filter)) {
             if (is_string($filter)) {
-                $url = preg_replace('#(' . preg_quote($filter) . '=[^&]*[&]?)#i', '', $url);
+                $url = preg_replace('#(\??' . preg_quote($filter) . '=[^&]*[&]?)#i', '', $url);
             } else if (is_array($filter)) {
                 foreach ($filter as $key) {
-                    $url = preg_replace('#(' . preg_quote($key) . '=[^&]*[&]?)#i', '', $url);
+                    $url = preg_replace('#(\??' . preg_quote($key) . '=[^&]*[&]?)#i', '', $url);
                 }
             }
         }
@@ -58,7 +80,6 @@ class ShopSettingsController
     }
 
 
-    // atomx.loc/admin/shop/catalog/?filters[category_id]=2&order=date
     public function catalog()
     {
         $Register = Register::getInstance();
@@ -94,6 +115,8 @@ class ShopSettingsController
         $pages = '<div class="pages">' . $pages . '</div>';
         $content .= "<div class=\"list\">
 			<div class=\"title\">{$pages}</div>
+			<div class=\"add-cat-butt\" onClick=\"window.location.href='" . $this->getUrl('edit_product') . "'\">
+			<div class=\"add\"></div>" . __('Add product') . "</div>
 			<table cellspacing=\"0\" class=\"grid\"><tr>
 			<th width=\"\">" . getOrderLink(array('title', __('Title'))) . "</th>
 			<th width=\"15%\">" . getOrderLink(array('category.title', __('Category'))) . "</th>
@@ -107,11 +130,6 @@ class ShopSettingsController
 
 
         foreach ($entities as $entity) {
-            /*
-            $status_info = $Register['ACL']->get_user_group($entity->getAuthor()->getStatus());
-            $status = $status_info['title'];
-            $color = (!empty($status_info['color'])) ? $status_info['color'] : '';
-            */
             $content .= "<tr>
                         <td>" . h($entity->getTitle()) . "</td>
 						<td>" . h($entity->getCategory()->getTitle()) . "</td>
@@ -119,7 +137,10 @@ class ShopSettingsController
 						<td>" . h($entity->getVendor()->getTitle()) . "</td>
 						<td>" . h($entity->getOrders_cnt()) . "</td>
 						<td>" . h($entity->getComments_cnt()) . "</td>
-						<td>" . h($entity->getPrice()) . "</td>
+						<td style=\"white-space:nowrap;\">" . number_format($entity->getPrice(), 2, ',', ' ') 
+							. (($entity->getFinal_price() != $entity->getPrice()) 
+							? '<span class="top-index red">' . number_format($entity->getFinal_price(), 2, ',', ' ') . '</span>' : '') 
+							. "</td>
 						<td>" . h($entity->getDiscount()) . "</td>
 						<td colspan=\"\">
 						<a class=\"edit\" title=\"" . __('Edit') . "\" href='" . $this->getUrl('edit_product/' . $entity->getId()) . "'></a>
@@ -134,7 +155,6 @@ class ShopSettingsController
     }
 
 
-    // atomx.loc/admin/shop/edit_product/1/
     public function edit_product($id = null)
     {
         $id = intval($id);
@@ -145,6 +165,7 @@ class ShopSettingsController
         }
 
         $content = '';
+		$fields = '';
         $this->pageTitle = __('Shop') . ' / ' . __('Editing product');
         $this->pageNav = __('Shop') . ' / ' . __('Editing product');
         $this->pageNavr = __('Editing product') . ' | [<a href="' . $this->getUrl('catalog') . '">' . __('Catalog') . '</a>]';
@@ -154,17 +175,43 @@ class ShopSettingsController
         $attrsGroupsModel = $Register['ModManager']->getModelInstance('shopAttributesGroups');
         $productsModel = $Register['ModManager']->getModelInstance('shopProducts');
         $productsModel->bindModel('attributes.content');
-        $entity = $productsModel->getById($id);
-        if (!$entity) {
-            $_SESSION['errors'] = __('Record not found');
-            redirect($this->getUrl('catalog'));
-        }
+        $productsModel->bindModel('attaches');
+        
+		if ($id) {
+			$entity = $productsModel->getById($id);
+			if (!$entity) {
+				$_SESSION['errors'] = __('Record not found');
+				redirect($this->getUrl('catalog'));
+			}
+		} else {
+			$entity = $Register['ModManager']->getEntityInstance('shopProducts');
+		}
+		
+		
+		// Change attributes group
+		if (!empty($_GET['attr_group_id'])) {
+			$curr_group_id = $entity->getAttributes_group_id();
+			if (empty($curr_group_id) || $curr_group_id != intval($_GET['attr_group_id'])) {
+				$attrsModel = $Register['ModManager']->getModelInstance('shopAttributes');
+				$attrs = $attrsModel->getCollection(array('group_id' => intval($_GET['attr_group_id'])));
+				if ($id) {
+					$attrsModel->delete(array('product_id' => $id));
+					$entity->setAttributes_group_id(intval($_GET['attr_group_id']));
+					$entity->save();
+					$entity = $productsModel->getById($id);
+				} else {
+					$entity->setAttributes_group_id(intval($_GET['attr_group_id']));
+					$entity->setAttributes($attrs);
+				}
+			}
+		}
 
 
+        // Save product if POST data have been sent
 		if (!empty($_POST)) {
             $errors = $Register['Validate']->check(__FUNCTION__);
             if (!empty($errors)) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
                 redirect($this->getUrl('edit_product/' . $id));
             }
 
@@ -181,6 +228,7 @@ class ShopSettingsController
 				}
 			}
 
+		
             if ($entity->getTitle() != $_POST['title'])
                 $entity->setTitle($_POST['title']);
             if ($entity->getDescription() != $_POST['description'])
@@ -203,53 +251,193 @@ class ShopSettingsController
 			$entity->setAvailable((!empty($_POST['available']) ? '1' : '0'));
 			$entity->setView_on_home((!empty($_POST['view_on_home']) ? '1' : '0'));
 			$entity->setHide_not_exists((!empty($_POST['hide_not_exists']) ? '1' : '0'));
-			
-			if ($entity->save(true)) {
+
+            $entity_id = $entity->save(true);
+
+			if ($entity_id) {
+                // Save product attaches
+                if (!empty($_POST['attaches']) && is_array($_POST['attaches'])) {
+                    $attachesModel = $Register['ModManager']->getModelInstance('shopAttaches');
+
+                    foreach ($_POST['attaches'] as $attach_id) {
+                        if (intval($attach_id) < 1) continue;
+
+                        $attach = $attachesModel->getById($attach_id);
+                        if ($attach && $attach->getEntity_id() !== $entity_id)
+                            $attach->setEntity_id($entity_id)->save();
+                    }
+                }
+
 				$_SESSION['message'] = __('Operation is successful');
-				redirect($this->getUrl('edit_product/' . $id));
+				redirect($this->getUrl('edit_product/' . $entity->getId()));
 			}
 			$_SESSION['errors'] = __('Some error occurred');
-			redirect($this->getUrl('edit_product/' . $id));
+			redirect($this->getCurrentUrl());
 		}
 
-
-        $fields = '';
-        // product image
-        if ($entity->getImage()) {
-            $fields .= '<div class="setting-item">
-                            <div class="left">
-                            ' . __('Image') . '
-                            </div>
-                            <div class="right">
-                                <input type="file" name="image" />
-                            </div>
-                            <div class="clear"></div>
-                        </div>';
-        }
-
+		
         // product attributes
 		$fields .= '<input type="hidden" name="attributes[]" value="" />';
         if ($entity->getAttributes()) {
             foreach ($entity->getAttributes() as $attr) {
-                $attr_content = ($attr->getContent())
-                    ? $attr->getContent()->getContent()
-                    : '';
                 $fields .= '<div class="setting-item highlight">
                             <div class="left">
                             ' . h($attr->getLabel()) . '
                             </div>
                             <div class="right">'
                                 . $attr->getInputField()
-                                //. '<input type="text" name="attributes[' . h($attr->getTitle()) . ']" value="' . h($attr_content) . '" />'
                             . '</div>
                             <div class="clear"></div>
                         </div>';
             }
         }
 
+
+        // product image
+		$attaches = (array)$entity->getAttaches();
+		$main_image = '';
+		$slider_images = array();
+		foreach ($attaches as $attach) {
+			if ($attach->getIs_main()) {
+                $main_image = '<img data-id="' . $attach->getId() . '" title="' .
+                    $attach->getFilename() . '" src="/image/shop/' . $attach->getFilename() . '/150/" />';
+                continue;
+            }
+            $slider_images[] = '<div class="attach-item" data-filename="' . $attach->getFilename() . '">
+                <img title="' . $attach->getFilename() . '" src="/image/shop/' . $attach->getFilename() . '/100/" />
+                <input type="hidden" name="attaches[]" value="' . $attach->getId() . '" />
+                <div class="atmshop-del-attach">' . __('Delete') .
+                '</div><div class="atmshop-asmain-attach">' . __('As main') . '</div>
+                </div>';
+		}
+
+        // If main image is not set, uses the first image
+        if (empty($main_image) && !empty($attaches)) {
+            $attach = $attaches[0];
+            $main_image = '<img data-id="' . $attach->getId() . '" title="' .
+                $attach->getFilename() . '" src="/image/shop/' . $attach->getFilename() . '/150/" />';
+            array_shift($slider_images);
+        }
+        $slider_width = count($slider_images) * 110;
+
+		$fields .= '<div class="setting-item">
+						<div class="left">
+						' . __('Image') . '
+						</div>
+						<div class="right">
+							<div id="main-image" class="main-image">' . $main_image . '</div>
+							<div class="upload-area">
+								<div class="drag-area">' . __('Add') . '</div>
+								<input id="attach" multiple="multiple" type="file" name="attach[]" />
+							</div>
+							<div class="clear"></div>
+							<div class="products-images">
+							<div style="width:' . $slider_width . 'px;" class="viewport" id="attaches-list">' .
+                            implode('', $slider_images) . '</div></div>
+						</div>
+						<div class="clear"></div>
+					</div>';
+
+        // Atributes group ID listener & multi image upload handler
+        $content .= '<script type="text/javascript">
+			$(function(){
+				$(\'select[name="attributes_group_id"]\').change(function(e){
+					window.location.href = "' . $this->getCurrentUrl(array('attr_group_id')) . '?attr_group_id="+$(e.target).val();
+				});
+
+                var openAttachesSlider = function() {
+					if ($("#attaches-list img").length > 1 && !$("#attaches-list").parent().is(":visible")) {
+						$("#attaches-list").parent().slideDown();
+					}
+                };
+				var parseResponse = function(module, data) {
+					var $mainImage = $("#main-image"),
+						main;
+
+					if (typeof data.errors != "undefined" && data.errors.length > 0) {
+						showHelpWin(data.errors, "' . __('Error') . '");
+						return;
+					}
+
+					if (typeof data == "undefined" || data.length == 0 || data == false) {
+						showHelpWin("Files not found", "Information");
+						return;
+					}
+
+					var getTitle = function(data) {
+						return data.filename;
+					}
+
+					console.log($mainImage.html());
+					if ($mainImage.html() == \'\') {
+						$(data).each(function(key, value){
+							if (value.is_main == 1) main = value;
+						});
+					}
+					$(data).each(function(key, value) {
+						if ($mainImage.html() == \'\') {
+							if ((main && main.id == value.id) || key == 0) {
+								$("#main-image").html(\'<img data-id="\'+value.id+\'" title="\'+getTitle(value)+\'" src="/image/shop/\'+value.filename+\'/150/" />\');
+							}
+						}
+
+						var content = \'<div class="attach-item" data-filename="\'+value.filename+\'">\'
+							+ \'<img title="\'+getTitle(value)
+							+\'" src="/image/shop/\'+value.filename+\'/100/" />\'
+							+\'<input type="hidden" name="attaches[]" value="\'+value.id+\'" />\'
+							+\'<div class="atmshop-del-attach">' . __('Delete') . '</div><div class="atmshop-asmain-attach">' . __('As main') . '</div>\'
+							+\'</div>\';
+						$("#attaches-list").append(content);
+					});
+
+                    openAttachesSlider();
+					$("#attaches-list").width($("#attaches-list img").length * 110 + "px" );
+				};
+				openAttachesSlider();
+
+				AtomX.initMultiFileUploadHandler("shop", parseResponse);
+
+				$(".atmshop-del-attach").live("click", function(){
+					var attachId = $(this).parent().find("input").val();
+					var self = this;
+					$.ajax({
+					    url: "' . get_url('/shop/delete_attach/') . '"+ attachId +"/",
+					    type: "POST",
+					    dataType: "json",
+					    success: function(data){
+                            if (data.result != 1) return;
+							
+							$(self).parent().remove();
+							
+                            if ($("#main-image img").data("id") == attachId) {
+                                $("#main-image img").attr("src", "/image/shop/"+$("#attaches-list div:eq(0)").data("filename")+"/150/");
+                            }
+							
+                            $("#attaches-list").width($("#attaches-list img").length * 110 + "px" );
+					    }
+					});
+				});
+				$(".atmshop-asmain-attach").live("click", function(){
+					var attachId = $(this).parent().find("input").val();
+					var attachFilename = $(this).parent().data("filename");
+					$.ajax({
+					    url: "' . get_url('/shop/as_main_attach/') . '" + attachId + "/",
+					    type: "POST",
+					    dataType: "json",
+					    success: function(data){
+						    if (data.result != 1) return;
+						    $("#main-image img").attr("src", "/image/shop/"+attachFilename+"/150/");
+					    }
+					});
+				});
+			});
+			</script>';
+
+
         // product fields
         $attrs = array('title', 'description', 'article', 'price', 'discount', 'commented', 'available', 'view_on_home', 'hide_not_exists', 'quantity');
         $checkboxes = array('commented', 'available', 'view_on_home', 'hide_not_exists');
+
         foreach ($attrs as $attr) {
             $getter = 'get' . ucfirst($attr);
             if (in_array($attr, $checkboxes)) {
@@ -287,20 +475,38 @@ class ShopSettingsController
             ),
         );
         foreach ($foreign_models as $field => $params) {
+			$getter = 'get' . ucfirst($field);
             $foreign_entities = $params['model']->getCollection();
             $fields .= '<div class="setting-item">
                                 <div class="left">
                                 ' . $params['label'] . '
                                 </div>
                                 <div class="right"><select name="' . $field . '">';
+
+			$is_selected = false;
             if ($foreign_entities) {
                 foreach ($foreign_entities as $fentity) {
-                    $getter = 'get' . ucfirst($field);
-                    $selected = ($entity->$getter() === $fentity->getId()) ? ' selected="selected"' : '';
+					$change_attrs_group = false;
+					if ($field === 'attributes_group_id' &&
+						!empty($_GET['attr_group_id']) &&
+						$fentity->getId() == intval($_GET['attr_group_id'])) $change_attrs_group = true;
+						
+                    if ($entity->$getter() === $fentity->getId() || $change_attrs_group) {
+						$selected = ' selected="selected"';
+						$is_selected = true;
+					} else {
+						$selected = '';
+					}
+					
                     $fields .= '<option' . $selected . ' value="' . $fentity->getId()
                         . '">' . h($fentity->getTitle()) . '</option>';
                 }
             }
+			
+			if (!$entity->$getter() && !$is_selected) {
+				$fields .= '<option selected="selected" value=""> </option>';
+			}
+			
             $fields .= '</select></div>
                             <div class="clear"></div>
                         </div>';
@@ -308,7 +514,7 @@ class ShopSettingsController
 
 
         $content .= '<div class="warning">' . __('Highlighted rows are related to the attributes group.') . '</div>';
-        $content .= '<form method="POST" action="' . $this->getUrl('edit_product/' . $id) . '" enctype="multipart/form-data">
+        $content .= '<form method="POST" action="' . $this->getCurrentUrl() . '" enctype="multipart/form-data">
             <div class="list">
                 <div class="title">' . $this->pageNav . '</div>
                 <div class="level1">
@@ -467,7 +673,7 @@ class ShopSettingsController
 
         $errors = $Register['Validate']->check(__FUNCTION__);
         if (!empty($errors)) {
-            $_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+            $_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
             redirect($this->getUrl('categories'));
         }
 
@@ -476,7 +682,7 @@ class ShopSettingsController
         if (!empty($id)) {
             $entity = $model->getById($id);
             if (!$entity) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
                 redirect($this->getUrl('categories'));
             }
         } else {
@@ -486,7 +692,7 @@ class ShopSettingsController
         // check parent category
         $target_section = $model->getById(intval($_POST['parent_id']));
         if (!$target_section) {
-            $_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Parent section not found'), true);
+            $_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Parent section not found'), true);
             redirect($this->getUrl('categories'));
         }
         $path = $target_section->getPath();
@@ -540,7 +746,7 @@ class ShopSettingsController
 
 		$total = $model->getTotal();
 		if ($total <= 1) {
-			$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('You can\'t remove the last category'), true);
+			$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('You can\'t remove the last category'), true);
 			redirect($this->getUrl('categories'));
 		}
 		
@@ -628,7 +834,7 @@ class ShopSettingsController
 			
 			$errors = $Register['Validate']->check(__FUNCTION__);
             if (!empty($errors)) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
                 redirect($this->getUrl('attributes_groups'));
             }
 			
@@ -638,7 +844,7 @@ class ShopSettingsController
 			if (!empty($id)) {
 				$entity = $model->getById($id);
 				if (!$entity) {
-					$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+					$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
 					redirect($this->getUrl('attributes_groups'));
 				}
 			} else {
@@ -758,6 +964,7 @@ class ShopSettingsController
         $Register = Register::getInstance();
         $this->pageTitle = __('Shop') . ' / ' . __('Attributes group editing');
         $this->pageNav = __('Shop') . ' / ' . __('Attributes group editing');
+        $this->pageNavr = get_link(__('Attributes groups management'), $this->getUrl('attributes_groups'));
         $attributesModel = $Register['ModManager']->getModelInstance('shopAttributes');
         $model = $Register['ModManager']->getModelInstance('shopAttributesGroups');
         $model->bindModel('attributes');
@@ -765,7 +972,7 @@ class ShopSettingsController
 
         $entity = $model->getById($id);
         if (!$entity) {
-            $_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+            $_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
             redirect($this->getUrl('attributes_groups'));
         }
 		
@@ -778,7 +985,7 @@ class ShopSettingsController
 				
 			$errors = $Register['Validate']->check(__FUNCTION__);
 			if (!empty($errors)) {
-				$_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+				$_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
 				redirect($this->getUrl('attributes_group_edit/' . $id));
 			}
 			
@@ -786,7 +993,7 @@ class ShopSettingsController
 			if (!empty($attr_id)) {
 				$add_attr = $model->getById($attr_id);
 				if (!$add_attr) {
-					$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+					$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
 					redirect($this->getUrl('attributes_group_edit/' . $id));
 				}
 			} else {
@@ -815,7 +1022,10 @@ class ShopSettingsController
 				$_SESSION['errors'] = __('Permission denied');
 				redirect($this->getUrl('attributes_group_edit/' . $id));
 			}
+			
+			$entity = $attributesModel->getById(intval($_GET['attr_id']));
 			$entity->delete();
+			
 			$_SESSION['message'] = __('Operation is successful');
 			redirect($this->getUrl('attributes_group_edit/' . $id));
 		}
@@ -967,7 +1177,7 @@ class ShopSettingsController
 						<td>" . h($attr->getIs_filterable()) . "</td>
 						<td colspan=\"\">
 						<a class=\"edit\" title=\"" . __('Edit') . "\" onClick=\"openPopup('" . $attr->getId() . "_attr');\" href='javascript:void(0);'></a>
-						<a class=\"delete\" title=\"" . __('Delete') . "\" href='" . $this->getUrl('attributes_group_edit/'
+						<a class=\"delete\" title=\"" . __('Delete') . "\" onClick=\"return confirm('" . __('Are you sure?') . "')\" href='" . $this->getUrl('attributes_group_edit/'
                         . $id . "?del_attr=1&attr_id=" . $attr->getId()) . "'></a>
 						</td>
 						</tr>";
@@ -1035,7 +1245,7 @@ class ShopSettingsController
 			
             $errors = $Register['Validate']->check(__FUNCTION__);
             if (!empty($errors)) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
                 redirect($this->getUrl('delivery'));
             }
 			
@@ -1043,7 +1253,7 @@ class ShopSettingsController
 			if (!empty($id)) {
 				$entity = $model->getById($id);
 				if (!$entity) {
-					$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+					$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
 					redirect($this->getUrl('delivery'));
 				}
 			} else {
@@ -1217,7 +1427,7 @@ class ShopSettingsController
 			
             $errors = $Register['Validate']->check(__FUNCTION__);
             if (!empty($errors)) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
                 redirect($this->getUrl('vendors'));
             }
 			
@@ -1225,7 +1435,7 @@ class ShopSettingsController
 			if (!empty($id)) {
 				$entity = $model->getById($id);
 				if (!$entity) {
-					$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+					$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
 					redirect($this->getUrl('vendors'));
 				}
 			} else {
@@ -1234,7 +1444,9 @@ class ShopSettingsController
 			
 			$entity->setTitle(trim($_POST['title']));
 			$entity->setDescription((!empty($_POST['description']) ? trim($_POST['description']) : ''));
+			$old_discount = $entity->getDiscount();
 			$entity->setDiscount((!empty($_POST['discount']) ? intval($_POST['discount']) : 0));
+			$old_view_on_home = $entity->getView_on_home();
 			$entity->setView_on_home((!empty($_POST['view_on_home']) ? '1' : '0'));
 			$entity->setHide_not_exists((!empty($_POST['hide_not_exists']) ? '1' : '0'));
 			if (!empty($_POST['logo_image_delete']) && $entity->getLogo_image()) {
@@ -1469,9 +1681,8 @@ class ShopSettingsController
 	}
 
 
-	public function orders($id = null)
+	public function orders()
 	{
-		$id = intval($id);
 		$per_page = 50;
         $Register = Register::getInstance();
         $this->pageTitle = __('Shop') . ' / ' . __('Orders management');
@@ -1500,7 +1711,7 @@ class ShopSettingsController
             'limit' => $per_page,
             'order' => $model->getOrderParam(),
         );
-		$orders = $model->getCollection();
+		$orders = $model->getCollection($where, $params);
 		
 		
         $content .= "<div class=\"list\">
@@ -1640,7 +1851,8 @@ class ShopSettingsController
 			}
         }
         $content .= '</table></div>';
-		return $popups . $content;
+
+		return $popups . $filters . $content . $filters;
 	}
 	
 	
@@ -1659,7 +1871,7 @@ class ShopSettingsController
 		if ($id > 0) {
 			$entity = $model->getById($id);
             if (!$entity) {
-                $_SESSION['errors'] = $Register['Validate']->wrapErrors(__('Record not found'), true);
+                $_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('Record not found'), true);
                 redirect($this->getUrl('orders'));
             }
 		} else {
@@ -1675,7 +1887,7 @@ class ShopSettingsController
 			
 			$errors = $Register['Validate']->check(__FUNCTION__);
 			if (!empty($errors)) {
-				$_SESSION['errors'] = $Register['Validate']->wrapErrors($errors);
+				$_SESSION['errors'] = $Register['DocParser']->wrapErrors($errors);
 				redirect($this->getUrl('order_edit/' . $id));
 			}
 			
@@ -1697,7 +1909,7 @@ class ShopSettingsController
 					}
 					
 					if (count($products) == 1) {
-						$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('You can\'t remove the last product in order'), true);
+						$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('You can\'t remove the last product in order'), true);
 						redirect($this->getUrl('order_edit/' . $id));
 					}
 					$deleted_products[] = $pr;
@@ -1705,7 +1917,7 @@ class ShopSettingsController
 				}
 			}
 			if (empty($products) && empty($_POST['products'])) {
-				$_SESSION['errors'] = $Register['Validate']->wrapErrors(__('You can\'t seve an order without products'), true);
+				$_SESSION['errors'] = $Register['DocParser']->wrapErrors(__('You can\'t seve an order without products'), true);
 				redirect($this->getUrl('order_edit/' . $id));
 			}
 			
@@ -2855,6 +3067,32 @@ class ShopSettingsController
                     'title' => __('Title'),
 				),
 			),
+			'attributes_group_edit' => array(
+				'title' => array(
+                    'required' => true,
+                    'max_lenght' => 250,
+                    'title' => __('Title'),
+				),
+				'label' => array(
+                    'required' => true,
+                    'max_lenght' => 250,
+                    'title' => __('Label'),
+				),
+				'type' => array(
+                    'required' => true,
+                    'max_lenght' => 10,
+                    'title' => __('Type'),
+				),
+				'params' => array(
+                    'required' => false,
+                    'max_lenght' => 1000,
+                    'title' => __('Params'),
+				),
+				'is_filterable' => array(
+                    'required' => false,
+                    'title' => __('Is filterable'),
+				),
+			),
             'delivery' => array(
                 'title' => array(
                     'required' => true,
@@ -2938,11 +3176,3 @@ class ShopSettingsController
         return $rules;
     }
 }
-
-/* Поиск материалов в ассортименте
-LEFT JOIN shop_attributes_content aattrs ON aattrs.product_id = a.id
-LEFT JOIN shop_attributes_content battrs ON battrs.product_id = b.id
-JOIN shop_attributes atr ON aattrs.attribute_id = atr.id
-WHERE a.stock_id IS NOT NULL AND a.stock_id != 0 AND (aattrs.attribute_id = battrs.attribute_id AND aattrs.content != battrs.content)
-GROUP BY a.id
-*/

@@ -4,7 +4,7 @@ $FpsInstallSettings = array(
     'title' => 'Shop',
     'description' => 'My New Shop',
     'max_lenght' => '15000',
-    'per_page' => '10',
+    'per_page' => '20',
     'active' => 1,
     'comment_active' => 1,
     'comment_per_page' => '50',
@@ -16,4 +16,5 @@ $FpsInstallSettings = array(
     'img_size_x' => '150',
     'img_size_y' => '350',
     'comments_order' => 0,
+    'discount_algorithm' => 1,
 );
