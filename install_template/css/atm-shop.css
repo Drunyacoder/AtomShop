@@ -16,6 +16,11 @@
 .product-price.na .product-new-price, .product-price.na .product-plain-price {color:#777;}
 .product-price.lp .product-new-price, .product-price.lp .product-plain-price {color:#f60;}
 
+.atm-shop .last-products, .atm-shop .not-available {margin:10px 0px 0px; font-size:15px; color:#f60;}
+.atm-shop .not-available {color:#777;}
+.atm-shop .outdent {margin-bottom:10px;}
+.atm-shop .outdent + .product-price {margin-top:5px;}
+
 /* Mini cart */
 .mini-basket {height:28px; text-align:left; display:inline-block; position:relative;}
 .mini-basket * {font-family:ArialNarrow,Arial,sans-serif;}
@@ -35,15 +40,16 @@
 
 /* Products List */
 .catalog {}
-.catalog .product-item {width:200px; height:300px; margin:15px; float:left; font-size:14px;}
+.catalog .product-item {width:200px; height:260px; margin:15px; float:left; font-size:14px; overflow:hidden; position:relative;}
 .catalog .product-item .product-image {width:150px; height:150px; margin:auto; margin-bottom:20px;}
 .catalog .product-item .product-image img {max-width:150px;}
 
 /* Expand product info by hovering */
-.catalog .product-item .product-description{height:30px; overflow:hidden; background:#fff; position:relative; margin-top: 10px;}
-.catalog .product-item:hover .product-description{height:auto;}
-.catalog .product-item .product-item-overlay {height:300px; padding:12px;}
-.catalog .product-item:hover .product-item-overlay {height:auto; border:2px solid #cacaca; border-radius:5px; padding:10px; background:#fff;}
+.catalog .product-item .product-description{display:none; overflow:hidden; background:#fff; position:relative; margin-top: 10px;}
+.catalog .product-item:hover .product-description{display:block;}
+.catalog .product-item .product-item-overlay {height:auto; padding:10px; background:#fff;}
+.catalog .product-item:hover  {overflow:visible;}
+.catalog .product-item:hover .product-item-overlay {border:2px solid #cacaca; border-radius:5px; position:absolute; top:0px; left:0px; z-index:1;}
 .catalog .product-item h2 {font-size:16px; font-weight:normal; color:#777; text-decoration:underline;}
 .catalog .product-item h2:hover {color:#333;}
 .catalog .product-item a.title {text-decoration:none;}
@@ -52,21 +58,18 @@
 .catalog .product-item .product-price {letter-spacing:-1px;}
 .catalog .product-item .product-old-price {letter-spacing:-1px;}
 
-.catalog .product-item .last-products, .catalog .product-item .not-available {margin:10px 0px 0px; font-size:15px; color:#f60;}
-.catalog .product-item .not-available {color:#777;}
-.catalog .product-item .outdent {margin-bottom:10px;}
-.catalog .product-item .outdent + .product-price {margin-top:5px;}
-
 .catalog .product-item .product-footer {height:40px; width:100%; position:relative; top:-16px;  background:-moz-linear-gradient(center top , rgba(255, 255, 255, 0), #fff 40%, #fff 60%, rgba(255, 255, 255, 0));}
 
 /* View product */
 article.product {width:calc(100% - 30px); padding:15px;}
 article.product .image {width:250px; margin:20px; float:left;}
 article.product .common-info {width:35%; padding:0px 20px; float:left; text-align:left;}
+article.product .common-info .outdent {margin-bottom:10px;}
+article.product .common-info .outdent + .product-price {margin-top:15px;}
 article.product .common-info .product-new-price {font-size:30px; letter-spacing: 1px; float:none;}
 article.product .common-info .product-price {font-size:30px; letter-spacing: 1px;}
 article.product .common-info .product-price  .label {font-size:25px; letter-spacing: -1px;}
-article.product .common-info .product-old-price {font-size:20px; left:60px; top:-16px; color:#888;}
+article.product .common-info .product-old-price {font-size:20px; left:60px; top:-20px; color:#888;}
 article.product .common-info .buy-button {font-size:20px; padding:7px 10px; text-shadow:none !important; color:#fafafa;}
 article.product .common-info .attrs {width:100%; font-size:15px; padding:15px 0px;}
 
@@ -114,7 +117,7 @@ table.products tr td.title {font-size:20px; color:#333;}
 table.products tr td img {max-width:100px;}
 table.products tr td.product-price {font-size:17px; font-weight:bold; color:#769b16; position:relative; float:none;}
 table.products tr td.product-price .product-new-price {font-size:30px; letter-spacing: 1px; float:none;}
-table.products tr td.product-price .product-old-price {font-size:20px; left:-10px; top:28px; color:#888;}
+table.products tr td.product-price .product-old-price {font-size:20px; left:-10px; top:24px; color:#888;}
 
 
 

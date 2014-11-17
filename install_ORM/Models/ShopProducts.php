@@ -214,4 +214,10 @@ class ShopProductsModel extends FpsModel
 			? (array)$_GET['filters'] : array();
 	}
 	
+
+    public function getOrderParam()
+    {
+        $order = parent::getOrderParam();
+		return '(`quantity` > 0) DESC, ' . $order;
+    }
 }

@@ -31,7 +31,7 @@ Current context:
 					{% if entity.quantity == 0 %}
 						<div class="not-available">{{ 'Not available'|lang('shop') }}</div>
 						{% set price_class = 'na' %}
-					{% elseif entity.quantity <= 3 %}
+					{% elseif entity.quantity <= 1 %}
 						<div class="last-products">{{ 'Last products'|lang('shop') }}</div>
 						{% set price_class = 'lp' %}
 					{% endif %}

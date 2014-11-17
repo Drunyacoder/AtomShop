@@ -26,6 +26,17 @@ Current context:
     </div>
     <div class="common-info">
         <div class="price">
+			<div class="{% if entity.final_price != entity.price %}outdent{% endif %}">
+				{% set price_class = '' %}
+				{% if entity.quantity == 0 %}
+					<div class="not-available">{{ 'Not available'|lang('shop') }}</div>
+					{% set price_class = 'na' %}
+				{% elseif entity.quantity <= 1 %}
+					<div class="last-products">{{ 'Last products'|lang('shop') }}</div>
+					{% set price_class = 'lp' %}
+				{% endif %}
+			</div>
+			
             <div class="product-price">
 				<span class="label">{{ 'Price'|lang('shop') }}:</span>
                 {% if entity.final_price != entity.price %}
@@ -35,7 +46,8 @@ Current context:
                 <span class="">{{ entity.final_price|num_format(2, ',', ' ') }}</span>
                 {% endif %}
             </div>
-            <button class="buy-button atm_shop-add_to_basket">{{ 'Add to basket'|lang('shop') }}</button>
+            <button class="buy-button atm_shop-add_to_basket">{{ 'Buy'|lang('shop') }}</button>
+			
             <!--Add to basket modal window-->
             <section class="shop-modal-window" style="display:none;">
                 <header>
