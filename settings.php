@@ -596,8 +596,20 @@ class ShopSettingsController
 
 
         $cats_tree = $this->getTreeNode($all_categories);
-		$content .= $this->buildCatsList($cats_tree, $all_categories);
-        $popups .='<div id="addCat" class="popup">
+		
+		
+		$data = $this->buildCatsList($cats_tree, $all_categories);
+		$content = '<div class="list">' .
+			'<div class="title">' . __('Categories', 'shop') . '</div>' . 
+			'<div class="add-cat-butt" onClick="openPopup(\'addCat\');">' .
+			'<div class="add"></div>' . __('Add category') . '</div>' .
+			'<div class="level1">' . 
+			'<div class="items">' . 
+			$data[0] . 
+			'</div></div></div>';
+        
+		
+		$popups .= $data[1] . '<div id="addCat" class="popup">
 			<div class="top">
 				<div class="title">' . __('Adding category') . '</div>
 				<div onClick="closePopup(\'addCat\');" class="close"></div>
@@ -779,8 +791,10 @@ class ShopSettingsController
     public function category_on_home($id = null, $flag = 1)
     {
         $id = intval($id);
-		$flag = ($flag) ? '1' : '0';
+		$flag = !$flag;
         $Register = Register::getInstance();
+		
+		
         if (!$Register['ACL']->turn(array($this->module, 'categories_management'), false)) {
             $_SESSION['errors'] = __('Permission denied');
             redirect($this->getUrl('categories'));
@@ -2329,7 +2343,7 @@ class ShopSettingsController
 
 			list ($date1, $date2) = $this->getDateRange('top-products');
 			$data = $ordersProductsModel->getCollection(array(
-				"a.order_id IN (SELECT id FROM shop_orders WHERE date BETWEEN '{$date1}' AND '{$date2}')",
+				"order_id IN (SELECT id FROM shop_orders WHERE date BETWEEN '{$date1}' AND '{$date2}')",
 			), array(
 				'joins' => array(
 					array(
@@ -2346,15 +2360,16 @@ class ShopSettingsController
 				),
 				'alias' => 'a',
 				'group' => 'a.product_id',
-				'order' => '`cnt` DESC',
+				'order' => '`quantity` DESC',
 				'limit' => 30,
 			));
+
 			$top_products = array();
 			$top_products_ticks = array();
 			if (!empty($data)) {
 				foreach ($data as $k => $row) {
 					$row = $row->asArray();
-					$top_products[$k] = intval($row['cnt']);
+					$top_products[$k] = intval($row['quantity']);
 					$top_products_ticks[$k] = h($row['title']);
 				}
 			}
@@ -2524,124 +2539,144 @@ class ShopSettingsController
 			</div>
 			<script type="text/javascript">
 					$(document).ready(function(){
-					  plot1 = $.jqplot('chart1', <?php echo json_encode($orders_st_date) ?>, {
-						stackSeries: false,
-						captureRightClick: true,
-						seriesDefaults:{
-						  renderer:$.jqplot.BarRenderer,
-						  rendererOptions: {
-							  /*barMargin: 20,*/
-							  highlightMouseDown: true
-						  },
-						  pointLabels: {show: true, stackedValue: false}
-						},
-						axes: {
-						  xaxis: {
-							  renderer: $.jqplot.CategoryAxisRenderer,
-							  ticks: <?php echo json_encode($orders_st_date_ticks) ?>
-						  },
-						  yaxis: {
-							padMin: 0,
-							tickOptions: {formatString: '%d'}
-						  }
-						},
-						legend: {
-							show: true,
-							location: 'e',
-							placement: 'inside',
-							labels: ['total', 'process', 'delivery', 'complete']
-						}
-					  });
-					  plot2 = $.jqplot('chart2', [<?php echo json_encode($top_products) ?>], {
-						stackSeries: false,
-						captureRightClick: true,
-						seriesDefaults:{
-						  renderer:$.jqplot.BarRenderer,
-						  rendererOptions: {
-							  barMargin: 20,
-							  varyBarColor: true,
-							  highlightMouseDown: true
-						  },
-						  pointLabels: {show: true, stackedValue: false}
-						},
-						axes: {
-						  xaxis: {
-							  renderer: $.jqplot.CategoryAxisRenderer,
-							  ticks: <?php echo json_encode($top_products_ticks) ?>
-						  },
-						  yaxis: {
-							padMin: 0,
-							min: 0,
-							tickOptions: {formatString: '%d'}
-						  }
-						}
-					  });
-					  plot4 = $.jqplot('chart4', [<?php echo json_encode($orders_total) ?>], {
-						seriesDefaults:{
-						  pointLabels: {show: true, stackedValue: false}
-						},
-						axes: {
-						  xaxis: {
-							  renderer: $.jqplot.DateAxisRenderer,
-							  tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
-							   tickOptions: {angle: 30, fontSize: '10px'},
-							  autoscale:true,
-							  ticks: <?php echo json_encode($orders_total_ticks) ?>
-						  },
-						  yaxis: {
-							autoscale:true,
-							padMin: 0,
-							min: 0,
-							tickOptions: {formatString: '%d'}
-						  }
-						},
-						highlighter: {
-							show: true,
-							sizeAdjust: 7.5,
-							formatString: 'On %s was made orders for %s total'
-						},
-						series: [
-							{
-								lineWidth:2,
-								fill: true,
-								fillAndStroke: true,
-								color:'#4bb2c5',
-								fillColor: '#4bb2c5',
-								fillAlpha: 0.3,
-								label:'Orders total',
-								markerOptions: { style:'circle'}
+						try {
+						  plot1 = $.jqplot('chart1', <?php echo json_encode($orders_st_date) ?>, {
+							stackSeries: false,
+							captureRightClick: true,
+							seriesDefaults:{
+							  renderer:$.jqplot.BarRenderer,
+							  rendererOptions: {
+								  /*barMargin: 20,*/
+								  highlightMouseDown: true
+							  },
+							  pointLabels: {show: true, stackedValue: false}
+							},
+							axes: {
+							  xaxis: {
+								  renderer: $.jqplot.CategoryAxisRenderer,
+								  ticks: <?php echo json_encode($orders_st_date_ticks) ?>
+							  },
+							  yaxis: {
+								padMin: 0,
+								tickOptions: {formatString: '%d'}
+							  }
+							},
+							legend: {
+								show: true,
+								location: 'e',
+								placement: 'inside',
+								labels: ['total', 'process', 'delivery', 'complete']
 							}
-						]
-					  });
-					  plot5 = $.jqplot('chart5', <?php echo json_encode($deliveries) ?>, {
-						stackSeries: false,
-						captureRightClick: true,
-						seriesDefaults:{
-						  renderer:$.jqplot.BarRenderer,
-						  rendererOptions: {
-							  highlightMouseDown: true
-						  },
-						  pointLabels: {show: true, stackedValue: false}
-						},
-						axes: {
-						  xaxis: {
-							  renderer: $.jqplot.CategoryAxisRenderer,
-							  tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
-							  tickOptions: {angle: 30, fontSize: '10px'},
-							  ticks: <?php echo json_encode($deliveries_ticks) ?>
-						  },
-						  yaxis: {
-							padMin: 0,
-							tickOptions: {formatString: '%d'}
-						  }
-						},
-						legend: {
-							show: true,
-							location: 'e',
-							placement: 'inside',
-							labels: <?php echo json_encode($delivery_types) ?>
+						  });
+						} catch (e) {
+							$('#chart1').html('No Data Available');
 						}
-					  });
+						
+						try {
+						  plot2 = $.jqplot('chart2', [<?php echo json_encode($top_products) ?>], {
+							stackSeries: false,
+							captureRightClick: true,
+							seriesDefaults:{
+							  renderer:$.jqplot.BarRenderer,
+							  rendererOptions: {
+								  barMargin: 20,
+								  varyBarColor: true,
+								  highlightMouseDown: true
+							  },
+							  pointLabels: {show: true, stackedValue: false}
+							},
+							axes: {
+							  xaxis: {
+								  renderer: $.jqplot.CategoryAxisRenderer,
+								  ticks: <?php echo json_encode($top_products_ticks) ?>
+							  },
+							  yaxis: {
+								padMin: 0,
+								min: 0,
+								tickOptions: {formatString: '%d'}
+							  }
+							}
+						  });
+						} catch (e) {
+							$('#chart2').html('No Data Available');
+						}
+
+						try {
+						  plot4 = $.jqplot('chart4', [<?php echo json_encode($orders_total) ?>], {
+							seriesDefaults:{
+							  pointLabels: {show: true, stackedValue: false}
+							},
+							axes: {
+							  xaxis: {
+								  renderer: $.jqplot.DateAxisRenderer,
+								  tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
+								   tickOptions: {angle: 30, fontSize: '10px'},
+								  autoscale:true,
+								  ticks: <?php echo json_encode($orders_total_ticks) ?>
+							  },
+							  yaxis: {
+								autoscale:true,
+								padMin: 0,
+								min: 0,
+								tickOptions: {formatString: '%d'}
+							  }
+							},
+							highlighter: {
+								show: true,
+								sizeAdjust: 7.5,
+								formatString: 'On %s was made orders for %s total'
+							},
+							series: [
+								{
+									lineWidth:2,
+									fill: true,
+									fillAndStroke: true,
+									color:'#4bb2c5',
+									fillColor: '#4bb2c5',
+									fillAlpha: 0.3,
+									label:'Orders total',
+									markerOptions: { style:'circle'}
+								}
+							]
+						  });
+						} catch (e) {
+							$('#chart4').html('No Data Available');
+						}
+
+						try {
+						  plot5 = $.jqplot('chart5', <?php echo json_encode($deliveries) ?>, {
+							stackSeries: false,
+							captureRightClick: true,
+							seriesDefaults:{
+							  renderer:$.jqplot.BarRenderer,
+							  rendererOptions: {
+								  highlightMouseDown: true
+							  },
+							  pointLabels: {show: true, stackedValue: false}
+							},
+							axes: {
+							  xaxis: {
+								  renderer: $.jqplot.CategoryAxisRenderer,
+								  tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
+								  tickOptions: {angle: 30, fontSize: '10px'},
+								  ticks: <?php echo json_encode($deliveries_ticks) ?>
+							  },
+							  yaxis: {
+								padMin: 0,
+								tickOptions: {formatString: '%d'}
+							  }
+							},
+							legend: {
+								show: true,
+								location: 'e',
+								placement: 'inside',
+								labels: <?php echo json_encode($delivery_types) ?>
+							}
+						  });
+						} catch (e) {
+							$('#chart5').html('No Data Available');
+						}
+
 					});
 			</script>
 			<?php
@@ -2874,7 +2909,7 @@ class ShopSettingsController
             } else {
 
                 if ($val->getParent_id() == $id) {
-                    $out[$val['id']] = array(
+                    $out[$val->getId()] = array(
                         'category' => $val,
                         'subcategories' => $this->getTreeNode($array, $val->getId()),
                     );
@@ -2987,11 +3022,16 @@ class ShopSettingsController
 
 
             if (count($node['subcategories'])) {
-                $content .= $this->buildCatsList($node['subcategories'], $catsList, $indent . '<div class="cat-indent">&nbsp;</div>');
+                $data = $this->buildCatsList($node['subcategories'], 
+											$catsList, 
+											$indent . '<div class="cat-indent">&nbsp;</div>');
+											
+				$content .= $data[0];
+				$popups .= $data[1];
             }
         }
 
-        return $content;
+        return array($content, $popups);
     }
 
 
@@ -3170,6 +3210,16 @@ class ShopSettingsController
 					'pattern' => $Register['Validate']::V_TITLE,
                     'title' => __('Last name'),
 				),
+            ),
+            'category_save' => array(
+                'title' => array(
+                    'required' => true,
+                    'pattern' => $Register['Validate']::V_TITLE,
+                ),
+                'discount' => array(
+                    'required' => false,
+                    'title' => __('Discount'),
+                ),
             ),
         );
 
